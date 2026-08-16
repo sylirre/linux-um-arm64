@@ -15,14 +15,20 @@
 # last one. Overriding CC instead would turn off kbuild's compiler probing.
 set -uo pipefail
 
-TREE=${TREE:-/root/mlu-arm64/linux}
-ART=${ART:-/root/mlu-arm64/artifacts}
-NDK=${NDK:-/tmp/ndk/android-ndk-r27c}
+SCRIPT=$(realpath "$0")
+if [ -z "${TREE-}" ]; then
+	TREE=$(realpath "$(dirname "$SCRIPT")/../../../")
+fi
+
+UML_BUILD_DIR=${UML_BUILD_DIR:-/var/tmp/uml.bionic-build}
+ART="${UML_BUILD_DIR}/artifacts"
+O="${UML_BUILD_DIR}/tmp"
+
+NDK=${NDK:-${HOME}/android-tools/android-ndk-r28c}
 # 30 is the oldest level whose bionic declares everything UML uses directly:
 # statx (30), getrandom (28), futimes (26). The phone is API 35.
 API=${API:-30}
 JOBS=${JOBS:-$(nproc)}
-O=${O:-/tmp/umarm-build-bionic}
 
 TOOL=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
 if [ ! -x "$TOOL/clang" ]; then
@@ -34,7 +40,7 @@ export KBUILD_BUILD_TIMESTAMP=${KBUILD_BUILD_TIMESTAMP:-"Thu Jan  1 00:00:00 UTC
 export KBUILD_BUILD_USER=um
 export KBUILD_BUILD_HOST=arm64
 
-SHIM=/root/mlu-arm64/.bionic-shim
+SHIM="${UML_BUILD_DIR}/shim"
 mkdir -p "$SHIM"
 cat > "$SHIM/clang" <<EOF
 #!/bin/sh
