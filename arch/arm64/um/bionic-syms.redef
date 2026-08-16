@@ -19,6 +19,19 @@
 #   llvm-nm --undefined-only libc.a                > A
 #   llvm-nm --defined-only --extern-only vmlinux.a > B
 #   comm -12 A B
+#
+# The second group below comes from the other direction -- names both sides
+# *define*, which the link reports rather than silently mis-binding. They are
+# here because bionic keeps every raw syscall stub in a single member,
+# syscalls-arm64.o, so a reference to any one stub pulls in the definitions of
+# all of them. Both names are ordinary kernel-internal helpers that happen to
+# match a syscall wrapper; neither is EXPORT_SYMBOL'd and no host-side UML code
+# calls libc's version, so renaming the kernel side is safe.
+#
+# Recompute for a different NDK with:
+#   llvm-nm --defined-only --extern-only libc.a     | awk '$2 ~ /^[TDBR]$/ {print $3}' | sort -u > A
+#   llvm-nm --defined-only --extern-only vmlinux.a  | awk '$2 ~ /^[TDBR]$/ {print $3}' | sort -u > B
+#   comm -12 A B
 snprintf kernel_snprintf
 vsnprintf kernel_vsnprintf
 sprintf kernel_sprintf
@@ -40,3 +53,7 @@ strlcat kernel_strlcat
 strpbrk kernel_strpbrk
 strsep kernel_strsep
 strstr kernel_strstr
+
+# Defined on both sides; see the note above.
+sched_setattr kernel_sched_setattr
+sync_file_range kernel_sync_file_range
